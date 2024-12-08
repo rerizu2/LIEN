@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE風チャット</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e5e5e5;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow-y: auto;
+            height: 400px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .message.received {
+            justify-content: flex-start;
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message-text {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.sent .message-text {
+            background-color: #dcf8c6;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #ffffff;
+            border-top: 1px solid #ddd;
+        }
+
+        .input-container input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .input-container button {
+            margin-left: 10px;
+            padding: 10px 15px;
+            border: none;
+            background-color: #4caf50;
+            color: white;
+            font-size: 14px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .input-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container" id="chat-container"></div>
+    <div class="input-container">
+        <input type="text" id="message-input" placeholder="メッセージを入力">
+        <button onclick="sendMessage()">送信</button>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const input = document.getElementById('message-input');
+
+        // 現在のURLから部屋IDを取得
+        const params = new URLSearchParams(window.location.search);
+        const roomID = params.get('room') || 'default';
+
+        // WebSocket接続
+        const socket = new WebSocket(`ws://localhost:8080/?room=${roomID}`);
+
+        // メッセージ受信時
+        socket.onmessage = (event) => {
+            const messageText = event.data;
+            const newMessage = document.createElement('div');
+            newMessage.classList.add('message', 'received');
+            newMessage.innerHTML = `<span class="message-text">${messageText}</span>`;
+            chatContainer.appendChild(newMessage);
+
+            // スクロールを最下部に移動
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        };
+
+        // メッセージ送信
+        function sendMessage() {
+            const messageText = input.value.trim();
+            if (messageText) {
+                // 自分のメッセージを表示
+                const newMessage = document.createElement('div');
+                newMessage.classList.add('message', 'sent');
+                newMessage.innerHTML = `<span class="message-text">${messageText}</span>`;
+                chatContainer.appendChild(newMessage);
+
+                // サーバーに送信
+                socket.send(messageText);
+
+                // 入力フィールドをクリア
+                input.value = '';
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
